@@ -63,7 +63,6 @@ button:focus-visible,summary:focus-visible{outline:3px solid #c7a17d;outline-off
 @media(max-width:600px){#brand h1{font-size:1.9rem!important}#menu-drawer[open]{bottom:auto;left:50%;right:auto;top:7px;width:calc(100% - 16px);max-height:calc(100dvh - 14px)}.drawer-body{padding:16px;max-height:calc(100dvh - 80px)}.drawer-body .menu-grid{grid-template-columns:1fr}.drawer-heading h2{font-size:29px}.drawer-body .menu-filters{top:-16px}.drawer-body .menu-card{padding:16px}.drawer-body .menu-filters input,.drawer-body .menu-filters select{flex:1 1 100%}}
 
 .chat-message.user .message-text{color:#fff!important}
-.message-source{display:block;margin:12px 0 0 auto;font-size:10px;line-height:1.45;text-align:right;color:#927f6c;white-space:normal;max-width:100%;font-weight:400}
 .chat-message.pending{width:fit-content;color:#806b57;font-size:14px;background:#f7f0e5;border:1px solid #eadfce}
 .chat-message.pending .message-text::after{content:"…";display:inline-block;margin-left:3px;animation:coffee-wait 1.5s ease-in-out infinite}
 @keyframes coffee-wait{0%,100%{opacity:.35}50%{opacity:1}}
