@@ -1,0 +1,10 @@
+# Exact direct candidates; runtime verification and transitive lock required.
+fastapi==0.142.2
+gradio==6.29.1
+httpx==0.28.1
+argon2-cffi==25.1.0
+sse-starlette==3.5.0
+uvicorn==0.54.0
+rapidfuzz==3.14.6
+rank-bm25==0.2.2
+sentence-transformers==6.1.0

@@ -1,0 +1,12 @@
+.venv/
+state/
+.models/
+.env
+.env.*
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.sqlite3
+*.gguf
+*.safetensors
