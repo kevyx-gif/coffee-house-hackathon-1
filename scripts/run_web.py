@@ -58,6 +58,7 @@ async def main():
     parser.add_argument("--menu-only",action="store_true")
     for key in ("server","model","adapter","cache"):
         parser.add_argument("--"+key)
+    parser.add_argument("--semantic", action="store_true", help="Conversación con preferencias explícitas y clasificación Llama")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     catalog = load_catalog(root/"data/catalog.json")
@@ -105,7 +106,11 @@ async def main():
                         await asyncio.sleep(.2)
             client = LlamaClient("http://127.0.0.1:18089",cleanup_seconds=15)
             await client.verify_server()
-            flow = ConversationFlow(GroundedQueries(catalog,index,store),client)
+            if args.semantic:
+                from coffee_house.conversation.semantic import SemanticConversationFlow
+                flow = SemanticConversationFlow(GroundedQueries(catalog,index,store),client)
+            else:
+                flow = ConversationFlow(GroundedQueries(catalog,index,store),client)
         except BaseException:
             process.terminate()
             await asyncio.to_thread(process.wait,timeout=15)

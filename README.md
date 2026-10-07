@@ -8,7 +8,7 @@ Asistente web de Coffee & Matcha House para el **Hackathon 1 Construir un Asiste
 
 ## Qué se puede probar
 
-El asistente es la vista principal. El botón Menú abre una carta en cuadrícula con 72 bebidas, tamaños, precios, fuentes y buscador. Las respuestas muestran una nota de fuente y un indicador mientras se procesa la consulta.
+El asistente es la vista principal. El botón Menú abre una carta en cuadrícula con 72 bebidas, tamaños, precios, fuentes y buscador. Las respuestas muestran un indicador mientras se procesa la consulta.
 
 - «¿Cuánto cuesta latte caliente mediano?» → $70 MXN.
 - «¿Todavía tienen frappé Oreo?» → en existencia en el estado inicial de la demo.
@@ -20,11 +20,11 @@ El panel privado modifica únicamente disponibilidad simulada mediante Revisar �
 
 ## Cómo funciona
 
-Recuperación RAG híbrida: embeddings multilingües MiniLM, búsqueda por términos y coincidencias del catálogo. Llama 3.2 1B Instruct procesa un borrador interno. El backend compone precios y stock desde datos verificados; las salidas libres del modelo no tienen autoridad para modificar esos hechos. Los importes se calculan en centavos.
+Recuperación RAG híbrida: embeddings multilingües MiniLM, búsqueda por términos y coincidencias del catálogo. El recorrido con `--semantic` utiliza Llama 3.2 1B Instruct para clasificar la consulta y conserva las preferencias explícitas entre turnos. Ver [continuidad del chat](docs/Continuidad-del-chat.md). El recorrido anterior procesa un borrador interno. El backend compone precios y stock desde datos verificados; las salidas libres del modelo no tienen autoridad para modificar esos hechos. Los importes se calculan en centavos.
 
 Python, FastAPI, Gradio, SQLite, sentence-transformers, HTTPX y llama.cpp. Cola de 3 consultas activas y 10 en espera, una pendiente por conversación, con límite de 2 minutos y cancelación que espera confirmar la parada del motor. Sesiones del panel con Argon2, CSRF, revisión previa, conflictos e idempotencia; eventos SSE actualizan el menú.
 
-Se exploró LoRA en Colab con Transformers y PEFT, pero las evaluaciones no mostraron una mejora suficiente de exactitud factual. El despliegue conserva un adaptador experimental para el borrador interno; **no se presenta como un modelo ajustado aceptado**. Esta copia permite ejecutar el modelo base sin adaptador y conserva la validación externa de hechos. No incluye pesos ni tokens.
+Se exploró LoRA en Colab con Transformers y PEFT, pero las evaluaciones no mostraron una mejora suficiente de exactitud factual. El recorrido de continuidad usa el modelo base sin adaptador; **no se presenta LoRA como un ajuste aceptado**. Esta copia permite ejecutar el modelo base sin adaptador y conserva la validación externa de hechos. No incluye pesos ni tokens.
 
 ## Ejecutar una copia local
 
@@ -69,7 +69,7 @@ El acceso debe estar aprobado en tu cuenta de Hugging Face; el token se pide de 
 
 ```sh
 python scripts/prepare_minilm.py
-python scripts/run_web.py --auth state/admin.json --db state/demo.sqlite3   --server .models/llama.cpp/build/bin/llama-server --model .models/llama-3.2-1b-q8_0.gguf   --cache .models/minilm
+python scripts/run_web.py --auth state/admin.json --db state/demo.sqlite3   --server .models/llama.cpp/build/bin/llama-server --model .models/llama-3.2-1b-q8_0.gguf   --cache .models/minilm --semantic
 ```
 
 `--adapter /ruta/adaptador.gguf` es opcional y experimental. Las rutas son ejemplos que deben reemplazarse, no archivos incluidos. El modelo original está en https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct . Usar un GGUF propio convertido desde los pesos autorizados; no cargar archivos de origen desconocido.
@@ -81,7 +81,7 @@ python -m pip install -r requirements-test.txt
 PYTHONPATH=src python -m pytest -q
 ```
 
-Las pruebas usan datos sintéticos y dobles de inferencia; validan contratos de negocio, seguridad y cola, **no califican la calidad de Llama**. Esta copia pasó **276 pruebas automatizadas**. En el VPS se ejecutaron 49 pruebas API/UI/conversación correctas y se verificaron manualmente respuesta, acceso privado y cambios de disponibilidad.
+Las pruebas usan datos sintéticos y dobles de inferencia; validan contratos de negocio, seguridad y cola, **no califican la calidad de Llama**. Esta copia pasó **320 pruebas automatizadas** en la revisión del 7 de octubre. En el despliegue inicial se ejecutaron 49 pruebas API/UI/conversación correctas en el VPS y se verificaron manualmente respuesta, acceso privado y cambios de disponibilidad.
 
 ## Alcance y límites
 
