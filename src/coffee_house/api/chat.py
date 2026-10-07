@@ -96,6 +96,8 @@ def attach_chat(app,admin,flow,queue,catalog):
         if ticket.result is not None and ticket.status=="done":
             value=ticket.result
             reply=value.reply
+            if hasattr(flow,"revalidate"):
+                reply=flow.revalidate(value)
             if value.selection is not None and reply.stock_revision is not None:
                 try:
                     current=admin.store.snapshot()
@@ -106,7 +108,8 @@ def attach_chat(app,admin,flow,queue,catalog):
                 except StorageUnavailable:
                     reply=flow.composer.unavailable()
             response.update(text=reply.text,sources=list(reply.source_references))
-            if value.selection is not None:context["confirmed"]=value.selection
+            if value.context is not None:context["confirmed"]=value.context
+            elif value.selection is not None:context["confirmed"]=value.selection
         return response
     @app.post("/api/chat/{session_id}/{ticket_id}/cancel")
     async def cancel(session_id: str,ticket_id: str):

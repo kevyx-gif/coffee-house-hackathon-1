@@ -92,3 +92,14 @@ La comprensión de texto libre es conservadora: consultas ambiguas o con extras 
 La web está en el VPS; la inferencia depende de una torre propia encendida. Si falla, el menú permanece consultable. La demo no garantiza latencia ni servicio de producción. WhatsApp, roles de cajero/gerente y registro de tickets son trabajo futuro del Hackathon 2, todavía sin implementar.
 
 Esta es una exportación limpia e independiente: sin historia del repositorio privado, documentos internos de trabajo, configuración de servidores, claves, modelos, conversaciones ni historial administrativo. Nombre del negocio y menú publicados con autorización del responsable del proyecto. Los modelos conservan sus propias condiciones de uso; no se añade una licencia nueva para el contenido del menú.
+
+
+## Evidencia adicional del Hackathon 1
+
+- [Experimento LoRA: protocolo, resultados y límites](docs/Experimento-LoRA.md).
+- [Notebook de reproducción en Colab](training/LoRA-Colab.ipynb), con corpus sintético y entrenamiento deshabilitado inicialmente.
+- [Guion de demostración y revisión móvil](docs/Guion-demo.md).
+
+La exploración «¿qué tipos de latte tienen?» lista opciones reales del catálogo y separa los agotados, sin exigir una selección previa ni una llamada al modelo. La disponibilidad se vuelve a leer al entregar la respuesta. El menú se abre mediante un botón flotante que no reserva ancho lateral.
+
+Se probó Llama 3.2 3B Q8 de forma aislada. No se adoptó: en cinco consultas de desarrollo, el protocolo de interpretación añadió preferencias no pedidas o confundió un extra con una bebida, con tiempos de 47–59 segundos. Estos resultados no son una evaluación general del modelo ni acreditan la batería final del producto. La interpretación más amplia y la aceptación humana del tono siguen pendientes.

@@ -25,7 +25,7 @@ class DraftClient:
     ("¿Tienen iced oreo latte?", "out", "Se nos terminó"),
     ("¿Cuánto cuesta latte caliente mediano?", "available", "$70.00 MXN"),
     ("¿Cuánto cuesta latte caliente?", "clarification", "tamaño"),
-    ("¿Tienen latte?", "clarification", "modalidad"),
+    ("¿Tienen latte?", "clarification", "prefieres"),
     ("ola", "greeting", "¡Hola!"),
     ("¿Tienen wifi?", "missing_information", "personal"),
     ("latte caliente mediano con avena", "clarification", "Confirma"),

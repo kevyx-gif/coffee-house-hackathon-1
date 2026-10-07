@@ -1,0 +1,48 @@
+{
+  "epoch_validation_losses": [
+    1.1034667491912842,
+    0.9046218991279602
+  ],
+  "global_steps": 140,
+  "train_metrics": {
+    "train_runtime": 260.3421,
+    "train_samples_per_second": 4.302,
+    "train_steps_per_second": 0.538,
+    "total_flos": 1827707397120000.0,
+    "train_loss": 1.1822642258235387,
+    "epoch": 2.0
+  },
+  "training_peak_allocated_bytes": 3058837504,
+  "training_peak_reserved_bytes": 7086276608,
+  "adapter_reload_equal": true,
+  "finite_adapter_tensors": true,
+  "tensor_count": 64,
+  "product_quality_accepted": false,
+  "model": "meta-llama/Llama-3.2-1B-Instruct",
+  "revision": "9213176726f574b556790deb65791e0c5aa438b6",
+  "train_examples": 560,
+  "validation_examples": 140,
+  "seed": 42,
+  "precision": "FP16",
+  "gpu": "Tesla T4",
+  "lora": {
+    "r": 8,
+    "alpha": 16,
+    "dropout": 0.05,
+    "target_modules": [
+      "q_proj",
+      "v_proj"
+    ]
+  },
+  "dataset_sha256": {
+    "train.jsonl": "c771cbaf7bee653125e19879be3f4ab92c6f78c9717cccce6ba6f947742b14b4",
+    "validation.jsonl": "0978b0b76c41a2c4b64fb946eb5b9a264ffae3818736ae50cd46f18b8a49ed98"
+  },
+  "quality_comparison": {
+    "description": "LoRA600 frente a LoRA700, mismas 24 consultas de desarrollo; revisión propia",
+    "lora600_complete": 7,
+    "lora700_complete": 7,
+    "cases": 24,
+    "human_tone_evaluation": "pendiente"
+  }
+}

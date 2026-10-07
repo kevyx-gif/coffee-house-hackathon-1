@@ -92,11 +92,11 @@ class GroundedQueries:
             if re.search(pattern, text):
                 modes.add(mode)
         if len(modes) > 1:
-            return Decision("clarification", "¿Qué temperatura o modalidad prefieres?", tuple(identifiers))
+            return Decision("clarification", "¿Lo prefieres caliente, frío o frappé?", tuple(identifiers))
         if modes:
             identifiers = [key for key in identifiers if key.split("_", 1)[0] in modes]
         if len(identifiers) != 1:
-            return Decision("clarification", "¿Qué producto y modalidad prefieres?", tuple(identifiers))
+            return Decision("clarification", "¿Qué bebida te gustaría consultar? Dime si la prefieres caliente o fría.", tuple(identifiers))
         product = self.catalog.products[identifiers[0]]
         if re.search(r"\b(ingredientes|contiene|lleva)\b", text):
             if product.documented_ingredients is None:

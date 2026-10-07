@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 import httpx
 
+from coffee_house.conversation.browse import browse_reply
 from coffee_house.domain.pricing import ClarificationRequired, Selection
 from coffee_house.inference.client import GeneratedText, InferenceError, LlamaClient
 from coffee_house.responses import CustomerReply, InvalidFacts, ResponseComposer
@@ -27,12 +28,22 @@ class TurnResult:
     inference: GeneratedText | None = None
     failure: str | None = None
     selection: Selection | None = None
+    context: object = None
+    browse_question: str | None = None
 
 
 class ConversationFlow:
     def __init__(self, queries: GroundedQueries, client: LlamaClient):
         self.queries, self.client = queries, client
         self.composer = ResponseComposer(queries)
+
+    def revalidate(self, value):
+        if value.browse_question is not None:
+            try:
+                return browse_reply(value.browse_question, self.queries) or value.reply
+            except StorageUnavailable:
+                return self.composer.unavailable()
+        return value.reply
 
     async def answer(self, question: str, *, confirmed: Selection | None = None,
                      purpose: str | None = None, candidates=(), budget_cents=None,
@@ -51,6 +62,10 @@ class ConversationFlow:
         decision = Decision("unresolved", "")
         try:
             async with asyncio.timeout(seconds):
+                listing = browse_reply(question, self.queries)
+                if listing is not None:
+                    return TurnResult(listing, "catalog_options", "browse", time.monotonic()-started,
+                                      browse_question=question)
                 result = await asyncio.to_thread(self.queries.index.search, question)
                 # No heredar una bebida anterior si se menciona otra o cambia una preferencia.
                 explicit = any(c.exact_length > 0 for c in result.candidates if c.document.product_id)
