@@ -1,2 +1,5 @@
 * text=auto eol=lf
 *.docx binary
+
+# Conservar bytes exactos del corpus y sus hashes de reproducción.
+training/*.jsonl -text
