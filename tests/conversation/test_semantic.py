@@ -225,3 +225,60 @@ def test_zero_extra_removes_it_and_keeps_other_type(setup):
     result = answer(setup, "latte caliente grande con avena y espresso extra")
     result = answer(setup, "0 espressos extra", result.context)
     assert "$95.00 MXN" in result.reply.text and result.context.extras == ("leche_avena",)
+
+
+def test_two_sizes_include_actual_volume_and_separate_amounts(setup):
+    result = answer(setup, "¿Cuánto cuesta un Latte caliente mediano y uno grande, sin extras?")
+    for expected in ("12 oz / 360 ml", "16 oz / 480 ml", "$70.00 MXN", "$80.00 MXN"):
+        assert expected in result.reply.text
+    assert result.selection is None
+
+
+def test_multi_mode_comparison_keeps_sizes_with_their_mode_and_notices(setup):
+    result = answer(setup, "¿Cuánto cuesta el Pumpkin Spice Latte caliente mediano, grande, frío y frappé?")
+    assert result.reply.text.count("$95.00 MXN") == 3
+    assert "$85.00 MXN" in result.reply.text
+    assert "estimad" in result.reply.text.lower() and "confirm" in result.reply.text.lower()
+    assert result.reply.text.count("estimado para la demo") == 1
+    assert result.reply.text.count("Tamaño provisional para la demo") == 1
+    assert "Pumpkin Spice Latte frío" in result.reply.text and "Pumpkin Spice Latte frappé" in result.reply.text
+    assert result.selection is None
+
+
+def test_generic_comparison_does_not_invent_a_missing_cold_size(setup):
+    result = answer(setup, "¿Cuánto cuesta Latte caliente grande y frío mediano?")
+    assert "solo tenemos" in result.reply.text and "$" not in result.reply.text
+    assert result.selection is None
+
+
+def test_known_out_milk_does_not_need_size_to_explain_stock(setup):
+    result = answer(setup, "Quiero un Iced Latte con leche de almendras")
+    assert "todavía tenemos Iced Latte" in result.reply.text
+    assert "no tenemos Leche de Almendras" in result.reply.text
+    assert "Podemos usar Leche de Avena" in result.reply.text
+    assert "Podemos revisar Latte" not in result.reply.text
+    assert result.context.extras == ("leche_almendras",) and result.context.sizes == ()
+
+
+def test_same_conversation_explains_newly_out_drink_without_old_poll(setup):
+    from coffee_house.storage.sqlite import Change
+    previous = answer(setup, "¿Hay Iced Latte?")
+    store = setup[-2]
+    store.save("out-after-confirmation", "fixture", store.snapshot().revision, [Change("product", "iced_latte", False)])
+    result = answer(setup, "¿Sigue en stock?", previous.context)
+    assert "Disculpa" in result.reply.text and "ahora se agotó" in result.reply.text
+    assert "Se nos terminó Iced Latte" in result.reply.text
+
+
+def test_change_of_drink_does_not_attribute_earlier_stock_to_another(setup):
+    previous = answer(setup, "¿Hay Latte caliente?")
+    result = answer(setup, "¿Hay Iced Oreo Latte?", previous.context)
+    assert "Se nos terminó" in result.reply.text and "cuando preguntaste" not in result.reply.text
+
+
+def test_budget_offer_explains_both_excesses_without_adopting_removed_extras(setup):
+    result = answer(setup, "Solo quiero ese Iced Caramel Macchiato grande con avena y espresso extra; tengo $60")
+    assert "$125.00 MXN" in result.reply.text and "$65.00 MXN" in result.reply.text
+    assert "$95.00 MXN" in result.reply.text and "$35.00 MXN" in result.reply.text
+    assert "¿Quieres retirarlos?" in result.reply.text
+    assert len(result.context.extras) == 2

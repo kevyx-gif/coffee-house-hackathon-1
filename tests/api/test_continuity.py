@@ -103,3 +103,20 @@ def test_new_session_does_not_inherit_another_customer_drink(web):
     assert "$" not in value["text"]
     _, value = ask(web, a, "¿y con un espresso extra?")
     assert "$110.00 MXN" in value["text"]
+
+
+def test_repeated_stock_question_after_authenticated_save_explains_change(web):
+    sid = session(web)
+    _, initial = ask(web, sid, "¿Hay Iced Latte?")
+    assert "todavía tenemos" in initial["text"]
+    login = web.post("/api/login", json={"username":"fixture", "password":"synthetic-password"})
+    csrf = {"X-Coffee-CSRF":login.json()["csrf"]}
+    body = {"revision":0,"changes":[{"kind":"product", "identifier":"iced_latte", "available":False}]}
+    review = web.post("/api/admin/review", json=body, headers=csrf)
+    saved = web.post("/api/admin/save", json={**body, "review_token":review.json()["review_token"],
+        "operation_id":"synthetic-repeat-stock"}, headers=csrf)
+    assert saved.status_code == 200
+    _, value = ask(web, sid, "¿Sigue en stock?")
+    assert "Disculpa" in value["text"] and "Se nos terminó Iced Latte" in value["text"]
+    _, fresh = ask(web, session(web), "¿Hay Iced Latte?")
+    assert "cuando preguntaste" not in fresh["text"]

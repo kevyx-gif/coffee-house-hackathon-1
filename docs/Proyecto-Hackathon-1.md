@@ -8,7 +8,7 @@ Los clientes necesitan encontrar rápidamente bebidas, tamaños y precios, y sab
 
 ## Funciones de la demostración
 
-- Chat como vista principal, con lenguaje breve en español, indicador de búsqueda y fuentes discretas al pie de cada respuesta.
+- Chat como vista principal, con respuestas breves en español e indicador de búsqueda. El botón flotante abre el menú sin desplazar el chat.
 
 - Carta con 72 bebidas en tarjetas, búsqueda, categorías, tamaños, precios y disponibilidad de demostración. Puede consultarse sin usar el asistente.
 
@@ -18,19 +18,19 @@ Los clientes necesitan encontrar rápidamente bebidas, tamaños y precios, y sab
 
 ## Cómo se construyó el asistente
 
-RAG recupera información del menú mediante embeddings multilingües MiniLM, búsqueda por términos y coincidencias del catálogo. El backend interpreta las preferencias de forma conservadora, consulta el estado guardado y envía a Llama 3.2 1B Instruct un contexto acotado. El modelo genera un borrador interno; los precios y la disponibilidad de la respuesta final se validan con los datos, sin aceptar hechos libres que los contradigan.
+RAG recupera información del menú con MiniLM multilingüe, búsqueda por términos y coincidencias del catálogo. Llama 3.2 1B Instruct clasifica la intención de la consulta. El sistema conserva preferencias explícitas entre turnos, pide aclaraciones y construye los precios y la disponibilidad desde datos comprobados. El modelo no decide los importes ni los permisos.
 
 El proyecto utiliza Python, FastAPI, Gradio, SQLite, sentence-transformers, HTTPX y llama.cpp. La interfaz y el panel se alojan en un VPS con HTTPS. La inferencia se ejecuta en una torre propia conectada mediante un túnel privado; por eso necesita que la torre esté encendida.
 
 ## Relación con el Hackathon 1
 
-El proyecto aplica prompting, RAG, Llama y evaluación a la atención de clientes. Se exploró LoRA en Colab con Transformers y PEFT, sin demostrar una mejora suficiente de exactitud factual. El adaptador del despliegue sigue siendo experimental y sus borradores no tienen autoridad sobre los hechos. La copia pública permite ejecutar el modelo base sin adaptador.
+El proyecto aplica prompting, RAG, Llama y evaluación a la atención de clientes. También se entrenó LoRA en Colab con Transformers y PEFT sobre 700 conversaciones sintéticas. La comparación de los adaptadores de 600 y 700 ejemplos no demostró una mejora global suficiente. La demo utiliza el modelo base sin LoRA; el notebook y los resultados del experimento se conservan en el repositorio.
 
 ## Validación y ejemplos comprobados
 
-La copia pública pasó 276 pruebas de catálogo, precios, recuperación, respuestas, persistencia, permisos y cola. Usan datos sintéticos y dobles de inferencia; no califican la calidad del modelo. En el VPS pasaron 49 pruebas de API, interfaz y conversación, con comprobación manual de acceso privado, guardado y consultas en HTTPS.
+La copia pública pasó 328 pruebas automatizadas de negocio, persistencia, permisos y cola, con datos sintéticos y dobles de inferencia. Además, 20 de 20 escenarios funcionales pasaron con Llama y MiniLM reales en un entorno aislado, incluyendo cambios de existencias y desconexión. Kevin consideró adecuadas las respuestas y comprobó desde su celular ambos precios de E07. No se registró una revisión exhaustiva de teclado y cancelación.
 
-- Latte caliente mediano sin extras: respuesta de $70.00 MXN con referencia al menú.
+- Latte caliente mediano sin extras: $70.00 MXN, 12 oz / 360 ml. Iced Latte grande con avena y espresso extra: $110.00 MXN, 16 oz / 480 ml.
 
 - Iced Oreo Latte: agotado en el estado inicial de la demo; el menú conserva las otras preparaciones Oreo por separado.
 
@@ -48,6 +48,6 @@ Abrir la página, enviar una pregunta sobre precio o existencia y desplegar Men�
 
 ## Límites y trabajo futuro
 
-Es una demo académica sin pedidos, pagos, inventario real ni WhatsApp. Los datos provisionales están señalados. Las consultas ambiguas o con extras pueden requerir aclaraciones; no se declara una evaluación conversacional completa de 20 sobre 20. Siguen pendientes la revisión táctil desde celular y la evaluación humana integral.
+Es una demo académica sin pedidos, pagos, inventario real ni WhatsApp. Los datos provisionales se señalan. Las consultas ambiguas requieren confirmación y los datos desconocidos se remiten al personal. Una batería finita no garantiza todas las conversaciones; la valoración humana del tono y la revisión táctil desde celular se registran por separado.
 
 Para el Hackathon 2 se plantea integrar WhatsApp, roles operativos y tickets con confirmación previa al descuento de inventario; todavía no está implementado. La entrega no incluye credenciales, pesos de modelos, historial administrativo, conversaciones ni documentos internos.

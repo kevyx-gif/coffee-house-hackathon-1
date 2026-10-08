@@ -21,7 +21,7 @@ from coffee_house.storage.sqlite import StorageUnavailable
 
 from .browse import browse_reply
 from .flow import TurnResult
-from .preferences import extract_preferences, family_of, mode_of
+from .preferences import extract_preferences, family_of, mode_of, presentation_requests
 
 
 class Intent(BaseModel):
@@ -41,6 +41,9 @@ class ConversationState:
     proposed_family: str | None = None
     pending: str | None = None
     unresolved: str | None = None
+    presentations: tuple[tuple[str, str | None], ...] = ()
+    last_stock_revision: int | None = None
+    last_available_products: tuple[str, ...] = ()
 
 
 class SemanticConversationFlow:
@@ -106,7 +109,9 @@ class SemanticConversationFlow:
             unresolved = None
         return ConversationState(family, delta.modes or old.modes, sizes, extras,
             delta.budget if delta.budget is not None else old.budget, purpose, count,
-            delta.proposed_family, pending, unresolved)
+            delta.proposed_family, pending, unresolved,
+            presentation_requests(text) if purpose == "quote" else (),
+            old.last_stock_revision, old.last_available_products)
 
     def _reply(self,text,status="clarification",sources=(),revision=None):
         return CustomerReply(text,status,tuple(sources),stock_revision=revision)
@@ -130,15 +135,25 @@ class SemanticConversationFlow:
             return self._reply(text+" ¿Prefieres avena o consultar otra opción?"),None
         selections=[]
         for p in products:
-            if state.sizes:
-                if any(size not in {v.size for v in p.variants} for size in state.sizes):
+            requested = state.sizes
+            if state.presentations:
+                requested = tuple(size for mode, size in state.presentations if mode == mode_of(p.id))
+                if None in requested:
+                    if len(p.variants) != 1:
+                        return self._reply("¿Qué tamaño de " + p.name + " quieres comparar: mediano o grande?"), None
+                    requested = tuple(p.variants[0].size if size is None else size for size in requested)
+            if requested:
+                if any(size not in {v.size for v in p.variants} for size in requested):
                     current=self.composer.stock(Selection(p.id,None,state.extras))
-                    return self._reply("Para "+p.name+" solo tengo documentado "+", ".join(v.size_label for v in p.variants)+". "+(current.text if current.status=="out" else "¿Te parece bien ese tamaño?"),sources=current.sources,revision=current.stock_revision),None
-                selections.extend(Selection(p.id,size,state.extras) for size in state.sizes)
+                    notices = " ".join(dict.fromkeys(v.size_notice for v in p.variants if v.size_notice))
+                    return self._reply("Para "+p.name+" solo tenemos "+", ".join(v.size_label for v in p.variants)+". "+(notices+". " if notices else "")+(current.text if current.status=="out" else "¿Te parece bien ese tamaño?"),sources=current.sources,revision=current.stock_revision),None
+                selections.extend(Selection(p.id,size,state.extras) for size in dict.fromkeys(requested))
             elif state.purpose=="stock":selections.append(Selection(p.id,None,state.extras))
             elif state.purpose=="recommend" or state.budget is not None:
                 selections.extend(Selection(p.id,v.size,state.extras) for v in p.variants if v.recommendation_allowed)
             else:
+                if state.extras and any(snapshot.extras.get(e) is False for e in state.extras):
+                    return self.render(replace(state, purpose="stock"), previous_reply=previous_reply)
                 return self._reply("¿Qué tamaño prefieres: mediano o grande?" if len(p.variants)>1 else "Tenemos "+p.name+" en "+p.variants[0].size_label+". "+(p.variants[0].size_notice+". " if p.variants[0].size_notice else "")+"¿Quieres consultar esa presentación?"),None
         replies=[]
         for selected in selections:
@@ -146,7 +161,15 @@ class SemanticConversationFlow:
             replies.append(reply)
         if not replies:return self.composer.clarify("missing_size"),None
         sources=tuple(dict.fromkeys(s for r in replies for s in r.sources));revision=snapshot.revision
-        text="\n".join(r.text for r in replies)
+        texts = [r.text for r in replies]
+        if len(replies) > 1:
+            notices = tuple(dict.fromkeys(n for r in replies for n in r.notices))
+            texts = [r.text.removesuffix(" " + "; ".join(r.notices) + ".") if r.notices else r.text for r in replies]
+            text = "\n".join(texts)
+            if notices:
+                text += "\nEstas presentaciones: " + "; ".join(notices) + "."
+        else:
+            text = texts[0]
         if state.budget is not None:
             eligible=[];within=[]
             for selected in selections:
@@ -163,16 +186,23 @@ class SemanticConversationFlow:
                 if not within:text+=" El excedente es "+format_mxn(chosen[0][1].quote.total_cents-state.budget)+". ¿Te parece bien?"
                 else:text+=" ¿Cuál prefieres?" if len(chosen)>1 else " ¿Te parece bien?"
             else:
+                if len(selections) == 1 and replies[0].status == "available":
+                    facts = self.queries.prepare(selections[0])
+                    text += " Son " + format_mxn(facts.quote.total_cents-state.budget) + " más de tu presupuesto."
                 text+=" Ninguna de estas combinaciones queda dentro de tu presupuesto más $50.00 MXN."
                 bare=[Selection(s.product_id,s.size,()) for s in selections]
                 changes=[]
                 for s in bare:
                     try:
                         f=self.queries.prepare(s)
-                        if f.available and f.quote.total_cents<=state.budget+5000:changes.append(self.composer.quote(s).text)
+                        if f.available and f.quote.total_cents<=state.budget+5000:
+                            proposed = self.composer.quote(s).text
+                            if f.quote.total_cents > state.budget:
+                                proposed += " Son " + format_mxn(f.quote.total_cents-state.budget) + " más de tu presupuesto."
+                            changes.append(proposed)
                     except ClarificationRequired:pass
-                if changes and state.extras:text+=" Sin extras: "+" ".join(changes)+" ¿Quieres retirar los extras?"
-        if any(r.status=="out" for r in replies):
+                if changes and state.extras:text+=" Podemos quitar los extras: "+" ".join(changes)+" ¿Quieres retirarlos?"
+        if any(snapshot.products.get(p.id) is False for p in products):
             alternatives=[]
             for p in self.queries.catalog.products.values():
                 if family_of(p.id)!=state.family or p in products:continue
@@ -181,8 +211,11 @@ class SemanticConversationFlow:
                     if available.available:alternatives.append(p.name)
                 except ClarificationRequired:continue
             if alternatives:text+=" Podemos revisar "+" o ".join(alternatives[:2])+". ¿Te interesa alguna?"
-        if previous_reply is not None and previous_reply.stock_revision is not None and previous_reply.stock_revision!=revision and previous_reply.status=="available" and any(r.status=="out" for r in replies):
-            text="Disculpa, cambió la disponibilidad. "+text
+        changed = (previous_reply is not None and previous_reply.stock_revision is not None and previous_reply.stock_revision!=revision and previous_reply.status=="available" and any(r.status=="out" for r in replies))
+        changed = changed or (state.last_stock_revision is not None and state.last_stock_revision != revision and
+            any(p.id in state.last_available_products and snapshot.products.get(p.id) is False for p in products))
+        if changed:
+            text="Disculpa, cuando preguntaste sí teníamos; ahora se agotó. "+text
         unavailable_milks = [key for key in state.extras if key.startswith("leche_") and snapshot.extras.get(key) is False]
         if unavailable_milks:
             options = [extra.name for extra in self.queries.catalog.extras.values()
@@ -291,13 +324,22 @@ class SemanticConversationFlow:
                     proposed = self._products(replace(state, family=state.proposed_family, modes=()))
                     names = [p.name for p in proposed]
                     modes = {mode_of(p.id) for p in proposed}
-                    if modes == {"hot", "iced"}:
+                    if state.modes:
+                        matching = self._products(replace(state, family=state.proposed_family))
+                        reply = self._reply("¿Te refieres a " + " o ".join(p.name for p in matching) + "?")
+                    elif modes == {"hot", "iced"}:
                         label = next(p.name for p in proposed if mode_of(p.id)=="hot")
                         reply = self._reply("¿Te refieres a " + label + "? ¿Lo prefieres caliente o frío?")
                     else:
                         reply = self._reply("¿Te refieres a " + " o ".join(dict.fromkeys(names)) + "?")
                 else:
                     reply, selection = self.render(state)
+                    if reply.stock_revision is not None:
+                        current = self.queries.stock.snapshot()
+                        if current.revision == reply.stock_revision:
+                            state = replace(state, last_stock_revision=current.revision,
+                                last_available_products=tuple(p.id for p in self._products(state)
+                                    if current.products.get(p.id) is True))
                     if reply.status=="clarification" and state.family and not state.sizes and state.pending is None:
                         state = replace(state, pending="size")
                     return TurnResult(reply,"interpreted","stock" if state.purpose=="stock" else "quote",

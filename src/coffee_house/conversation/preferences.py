@@ -44,6 +44,28 @@ EXTRA_PATTERNS = {
 }
 
 
+def presentation_requests(question):
+    """Asocia tamaños con la modalidad que los precede en una comparación explícita.
+
+    Sin tamaño en una modalidad, el renderizador solo puede mostrar una presentación
+    única del catálogo. Nunca traslada mediano de caliente a frío.
+    """
+    text = normalize(question)
+    matches = sorted((m.start(), m.end(), mode) for mode, pattern in MODE_PATTERNS.items()
+                     for m in re.finditer(pattern, text))
+    if len({mode for _, _, mode in matches}) < 2:
+        return ()
+    requests = []
+    for index, (_, end, mode) in enumerate(matches):
+        stop = matches[index + 1][0] if index + 1 < len(matches) else len(text)
+        sizes = tuple(size for size, pattern in (
+            ("mediano", r"\b(mediano|mediana|12\s*oz|360\s*ml)\b"),
+            ("grande", r"\b(grande|16\s*oz|480\s*ml)\b"),
+        ) if re.search(pattern, text[end:stop]))
+        requests.extend((mode, size) for size in sizes or (None,))
+    return tuple(dict.fromkeys(requests))
+
+
 def extract_preferences(question, catalog):
     text = normalize(question)
     modes = tuple(key for key, pattern in MODE_PATTERNS.items() if re.search(pattern, text))

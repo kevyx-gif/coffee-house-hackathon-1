@@ -16,7 +16,7 @@ FP16, LoRA r=8, alpha=16, dropout=0.05 sobre q_proj/v_proj; dos épocas, batch 1
 
 ## Decisión técnica
 
-Separar interpretación del lenguaje y respuesta factual. El modelo puede proponer preferencias; el backend valida esas preferencias, consulta la existencia y calcula los precios. El experimento LoRA se entrega como evidencia reproducible de entrenamiento y evaluación, no como una mejora de calidad demostrada. La evaluación humana del tono sigue pendiente.
+Separar interpretación del lenguaje y respuesta factual. La demo usa **Llama 3.2 1B base sin LoRA** para clasificar la intención; el backend conserva las preferencias expresadas por el usuario, consulta la existencia y calcula los precios. El experimento LoRA se entrega como evidencia reproducible de entrenamiento y evaluación, no como una mejora de calidad demostrada. La revisión cualitativa favorable de Kevin corresponde a las respuestas finales de esta demo; no acredita el tono ni la exactitud de los adaptadores LoRA.
 
 ## Reproducción
 

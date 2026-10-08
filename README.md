@@ -81,13 +81,15 @@ python -m pip install -r requirements-test.txt
 PYTHONPATH=src python -m pytest -q
 ```
 
-Las pruebas usan datos sintéticos y dobles de inferencia; validan contratos de negocio, seguridad y cola, **no califican la calidad de Llama**. Esta copia pasó **320 pruebas automatizadas** en la revisión del 7 de octubre. En el despliegue inicial se ejecutaron 49 pruebas API/UI/conversación correctas en el VPS y se verificaron manualmente respuesta, acceso privado y cambios de disponibilidad.
+Las pruebas usan datos sintéticos y dobles de inferencia; validan contratos de negocio, seguridad y cola, **no califican la calidad de Llama**. Esta copia pasó **328 pruebas automatizadas** en la revisión del 7 de octubre; tras agrupar los avisos repetidos se repitieron las 72 pruebas afectadas. Las 47 pruebas de conversación y continuidad de esta corrección también pasaron en el VPS con Python 3.11.
+
+Además, la batería acordada pasó **20 de 20 escenarios funcionales con inferencia real**, en una instancia aislada con existencias sintéticas. Después se volvió a ejecutar E10 para comprobar la presentación final de sus avisos. Ver [método, resultados y límites](docs/Evaluacion-conversacional.md) y [preguntas y respuestas](evaluation/results-20.json). La revisión funcional es propia de Codex. Kevin consideró adecuadas las respuestas y confirmó desde su celular la mejora visual y ambos precios de E07; la revisión completa de teclado y cancelación no está registrada.
 
 ## Alcance y límites
 
 Demo académica del Hackathon 1, no punto de venta. Stock ficticio, sin pedidos, pagos ni descuento de inventario real. Horarios, dirección, wifi, panes y alérgenos no están confirmados. Pumpkin Spice y algunas presentaciones están marcados como provisionales; no deben interpretarse como información confirmada del negocio.
 
-La comprensión de texto libre es conservadora: consultas ambiguas o con extras pueden pedir aclaración; no todos los ejemplos complejos acordados tienen aceptación integral. No se declara un resultado de 20/20 ni calidad humana validada. En esta versión se retiró el selector manual de preferencias del chat.
+La comprensión de texto libre es conservadora: las consultas ambiguas pueden pedir aclaración. Los veinte escenarios acordados cumplen sus criterios funcionales; esta batería finita no garantiza cualquier conversación ni acredita calidad humana. En esta versión se retiró el selector manual de preferencias del chat.
 
 La web está en el VPS; la inferencia depende de una torre propia encendida. Si falla, el menú permanece consultable. La demo no garantiza latencia ni servicio de producción. WhatsApp, roles de cajero/gerente y registro de tickets son trabajo futuro del Hackathon 2, todavía sin implementar.
 
@@ -99,7 +101,8 @@ Esta es una exportación limpia e independiente: sin historia del repositorio pr
 - [Experimento LoRA: protocolo, resultados y límites](docs/Experimento-LoRA.md).
 - [Notebook de reproducción en Colab](training/LoRA-Colab.ipynb), con corpus sintético y entrenamiento deshabilitado inicialmente.
 - [Guion de demostración y revisión móvil](docs/Guion-demo.md).
+- [Evaluación conversacional y evidencia de los veinte casos](docs/Evaluacion-conversacional.md).
 
 La exploración «¿qué tipos de latte tienen?» lista opciones reales del catálogo y separa los agotados, sin exigir una selección previa ni una llamada al modelo. La disponibilidad se vuelve a leer al entregar la respuesta. El menú se abre mediante un botón flotante que no reserva ancho lateral.
 
-Se probó Llama 3.2 3B Q8 de forma aislada. No se adoptó: en cinco consultas de desarrollo, el protocolo de interpretación añadió preferencias no pedidas o confundió un extra con una bebida, con tiempos de 47–59 segundos. Estos resultados no son una evaluación general del modelo ni acreditan la batería final del producto. La interpretación más amplia y la aceptación humana del tono siguen pendientes.
+Se probó Llama 3.2 3B Q8 de forma aislada. No se adoptó: en cinco consultas de desarrollo, el protocolo de interpretación añadió preferencias no pedidas o confundió un extra con una bebida, con tiempos de 47–59 segundos. Estos resultados no son una evaluación general del modelo. La batería final usa el modelo de 1B base y un protocolo más acotado; la comprensión fuera de los casos probados requiere más evaluación.
