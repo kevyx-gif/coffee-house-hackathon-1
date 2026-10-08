@@ -90,7 +90,7 @@ class LlamaClient:
             self.quarantined.add(slot)
 
     async def generate(self, messages: list[dict[str, str]], *, seconds: float = 120,
-                       max_tokens: int = 256, on_slot=None) -> GeneratedText:
+                       max_tokens: int = 256, on_slot=None, response_schema=None) -> GeneratedText:
         if not 0 < seconds <= 120 or type(max_tokens) is not int or not 1 <= max_tokens <= 256:
             raise ValueError("Límites: 120 segundos y 256 tokens")
         if not messages or any(m.get("role") not in {"system", "user", "assistant"}
@@ -126,6 +126,8 @@ class LlamaClient:
                 body = {"prompt": prompt_tokens, "id_slot": slot, "stream": True,
                         "n_predict": max_tokens, "temperature": 0, "seed": 42,
                         "repeat_penalty": 1, "cache_prompt": False}
+                if response_schema is not None:
+                    body["json_schema"] = response_schema
                 dispatched = True
                 async with self.http.stream("POST", "/completion", json=body) as response:
                     response.raise_for_status()

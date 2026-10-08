@@ -47,10 +47,16 @@ class ResponseComposer:
         self.queries = queries
         self.catalog = queries.catalog
 
-    def _label(self, selection):
+    def _label(self, selection, *, measures=False):
         name = self.catalog.products[selection.product_id].name
         size = "presentación única" if selection.size == SINGLE_PRESENTATION else selection.size
-        return name if size is None else f"{name} {size}"
+        label = name if size is None else f"{name} {size}"
+        if measures and selection.size is not None:
+            variant = next(v for v in self.catalog.products[selection.product_id].variants if v.size == selection.size)
+            if variant.volume_ml is not None:
+                volume = f"{variant.volume_ml} ml" if variant.volume_oz is None else f"{variant.volume_oz} oz / {variant.volume_ml} ml"
+                label += f" ({volume})"
+        return label
 
     def _extra_names(self, ids):
         return _join([self.catalog.extras[key].name for key in ids])
@@ -160,7 +166,7 @@ class ResponseComposer:
         quote = facts.quote
         if facts.available:
             extras = f", con {self._extra_names(quote.selection.extras)}" if quote.selection.extras else ", sin extras"
-            text = f"{self._label(quote.selection)}{extras}: serían {format_mxn(quote.total_cents)}."
+            text = f"{self._label(quote.selection, measures=True)}{extras}: serían {format_mxn(quote.total_cents)}."
             status = "available"
         elif facts.details is not None:
             text, status = self._stock_text(facts.details)
@@ -183,7 +189,7 @@ class ResponseComposer:
             if proposal.requires_confirmation is not True and (proposal.changes or proposal.excess_cents):
                 raise InvalidFacts("Alternativa requiere confirmación")
             alternative = proposal.quote
-            description = self._label(alternative.selection)
+            description = self._label(alternative.selection, measures=True)
             if alternative.selection.extras:
                 description += f" con {self._extra_names(alternative.selection.extras)}"
             else:
@@ -196,7 +202,7 @@ class ResponseComposer:
             notices.extend(alternative.notices)
         if offers:
             text += f" Tenemos {_join(offers)}. ¿Te gustaría considerar alguna de estas opciones?"
-        elif not facts.available:
+        elif not facts.available and (facts.details is None or facts.details.product_available is not True):
             text += " Nuestro personal te puede ayudar a buscar otra opción."
         return self._reply(text, status, revision=facts.stock_revision, sources=sources, notices=notices)
 
